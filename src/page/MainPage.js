@@ -7,6 +7,7 @@ import { StyleSheet, Platform, View, Text, Image } from 'react-native';
 import TabNavigator from 'react-native-tab-navigator'
 import theme from '../constants/theme';
 import Home from './tabs/home'
+import DiscoveryTab from './tabs/DiscoveryTab'
 import { Icon } from '../utils/icon'
 import { connect } from 'react-redux';
 import px2dp from '../utils/px2dp';
@@ -54,11 +55,11 @@ class BottomTabBar extends Component {
         hidesTabTouch={true}
         tabBarStyle={[styles.tabBarStyle, { backgroundColor: this.props.rowItemBackgroundColor }]}
         sceneStyle={{
-          paddingTop: theme.toolbar.paddingTop, //immersive experience
+          // paddingTop: theme.toolbar.paddingTop, //immersive experience
           paddingBottom: styles.tabBarStyle.height
         }}>
         {this._renderItem(Home, 'home', '首页', this.state.homeIcon, this.state.homeIcon)}
-        {this._renderItem(Home, 'discovery', '发现', this.state.compassIcon, this.state.compassIcon)}
+        {this._renderItem(DiscoveryTab, 'discovery', '发现', this.state.compassIcon, this.state.compassIcon)}
         {this._renderItem(Home, 'collection', '收藏', this.state.moreIcon, this.state.moreIcon)}
         {this._renderItem(Home, 'more', '更多', this.state.collectionIcon, this.state.collectionIcon)}
       </TabNavigator>

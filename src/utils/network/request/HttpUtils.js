@@ -89,6 +89,7 @@ export default class HttpUtils extends Component {
    * @returns {Promise}
    */
   static getRequest = (url, params = {},source='HFSYSTEM') => {
+    console.log('=============');
     RootHUD.show();
     console.log(handleUrl(fetchUrl(url,source))(params));
     return timeoutFetch(fetch(handleUrl(fetchUrl(url,source))(params), {

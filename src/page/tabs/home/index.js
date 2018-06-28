@@ -4,17 +4,24 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { StyleSheet, View, Text, ScrollView, Animated, Image, RefreshControl, ListView, TouchableOpacity } from 'react-native';
 import RCTDeviceEventEmitter from 'RCTDeviceEventEmitter';
+import { connect } from 'react-redux';
 import { px2dp } from '../../../utils'
 import theme from '../../../constants/theme';
 import colors from '../../../constants/colors';
-import { getCurrentDate } from '../../../utils/utils';
+import { getCurrentDate, getUpDate } from '../../../utils/utils';
 import * as service from "./service";
+
+import ListViewForHome from './ListViewForHome';
 
 class Home extends Component {
   constructor(props) {
     super(props);
     this.state = {
       opacity: new Animated.Value(0),
+      error:false,
+      dataSource:{
+        category:[]
+      },
     };
     this.imageHeight = px2dp(400);
     this.fullUrl = '';
@@ -25,81 +32,40 @@ class Home extends Component {
     const { dataSource, mainThemeColor, pageBackgroundColor, rowItemBackgroundColor, segmentColor } = this.props;
     return (
       <View style={[styles.container, { backgroundColor: pageBackgroundColor }]}>
-        <ImageView
-          imgUrl={this.state.fullUrl}
-          labelTime={this.dataTime} />
+        <ScrollView>
+          {(this.state.error || !this.state.dataSource) ?
+            <View style={styles.indicator}>
+              <Text style={{ color: this.props.tabIconColor }}>Ooops, 获取数据失败</Text>
+            </View> :
+            <View>
+              <ImageView
+                imgUrl={this.state.fullUrl}
+                labelTime={this.dataTime} />
+              <View style={styles.scrollContents}>
+                {this.state.dataSource.category.map((item, i) => {
+                  if (item !== '福利' && this._getTargetList(this.state.dataSource, item) != null)
+                    return (
+                      <ListViewForHome
+                        key={i}
+                        navigator={this.props.navigator}
+                        dataSource={this._getTargetList(this.state.dataSource, item)}
+                        headerTitle={item} />
+                    );
+                })}
+              </View>
+            </View>}
+        </ScrollView>
       </View>
-      // <View style={[styles.container, { backgroundColor: pageBackgroundColor }]}>
-      //   <Animated.View style={[styles.toolbar, { opacity: this.state.opacity }]}>
-      //     <NavigationBar title="最新干货" />
-      //   </Animated.View>
-      //   <ScrollView
-      //     scrollEnabled={this.state.scrollEnabled}
-      //     onScroll={this._onScroll.bind(this)}
-      //     refreshControl={
-      //       <RefreshControl
-      //         refreshing={this.props.loading}
-      //         onRefresh={this._onPress.bind(this, 0)}
-      //         tintColor={mainThemeColor}
-      //         colors={[mainThemeColor]}
-      //         title="拼命加载中..."
-      //       />}
-      //   >
-      //     {(this.props.error && !this.props.hasData) ?
-      //       <View style={styles.indicator}>
-      //         <Text style={{ color: this.props.tabIconColor }}>Ooops, 获取数据失败</Text>
-      //       </View>
-      //       :
-      //       ((this.props.hasData && Info.getCategoryList(dataSource).length > 0) ?
-      //         <View>
-      //           <View style={{ height: this.imageHeight, width: theme.screenWidth }}>
-      //             <ImageView
-      //               imgUrl={Info.getFuLiUrl(dataSource)}
-      //               labelTime={this.props.dataTime} />
-      //           </View>
-      //           <View style={styles.scrollContents}>
-      //             {this.props.displayOrder.map((item, i) => {
-      //               if (item !== '福利' && Info.getTargetList(dataSource, item) != null)
-      //                 return (
-      //                   <ListViewForHome
-      //                     key={i}
-      //                     navigator={this.props.navigator}
-      //                     dataSource={Info.getTargetList(dataSource, item)}
-      //                     headerTitle={item} />
-      //                 );
-      //             })}
-      //             {/*<View style={[styles.footer, {*/}
-      //             {/*backgroundColor: rowItemBackgroundColor,*/}
-      //             {/*borderTopColor: segmentColor*/}
-      //             {/*}]}>*/}
-      //             {/*<TouchableOpacity*/}
-      //             {/*onPress={this._onPress.bind(this, 1)}*/}
-      //             {/*activeOpacity={theme.touchableOpacityActiveOpacity}>*/}
-      //             {/*<View style={styles.bottomBtn}>*/}
-      //             {/*<Text style={styles.btnLabel}>没看够？试试往期干货吧</Text>*/}
-      //             {/*</View>*/}
-      //             {/*</TouchableOpacity>*/}
-      //             {/*</View>*/}
-      //           </View>
-      //         </View>
-      //         :
-      //         null
-      //       )
-      //     }
-      //   </ScrollView>
-      // </View>
     );
   }
 
   _fetchData() {
-    service.getDaily(getCurrentDate(), {}).then(res => {
+    service.getDaily(getUpDate(), {}).then(res => {
+      console.log(res);
       let { category, error, results } = res;
-      if (!error) {
-        this.setState({ fullUrl: results['福利'][0].url })
-        console.log(this.fullUrl);
-      }
+      
+      this.setState({ fullUrl: results['福利'][0].url, error: error, dataSource: res })
     });
-    // this.props.actions.fetchDataIfNeed(getCurrentDate());
   }
 
   /**
@@ -125,6 +91,27 @@ class Home extends Component {
     //   this._fetchData();
     // else
     //   this.props.actions.onlyFetchLocalData(getCurrentDate());
+  }
+
+  _getTargetList(dataSource, target) {
+    switch (target) {
+      case 'Android':
+        return dataSource.results.Android;
+      case 'iOS':
+        return dataSource.results.iOS;
+      case '前端':
+        return dataSource.results.前端;
+      case '休息视频':
+        return dataSource.results.休息视频;
+      case '拓展资源':
+        return dataSource.results.拓展资源;
+      case 'App':
+        return dataSource.results.App;
+      case '瞎推荐':
+        return dataSource.results.瞎推荐;
+      default:
+        return null;
+    }
   }
 
   // _onPress(id) {
@@ -155,7 +142,7 @@ class ImageView extends Component {
 
   render() {
     return (
-      <View style={styles.container}>
+      <View style={styles.imgContainer}>
         <Image source={{ uri: this.props.imgUrl }} style={styles.img} />
         <View style={styles.dateLabel}>
           <Text style={styles.label}>{this.props.labelTime}</Text>
@@ -170,6 +157,7 @@ const mapStateToProps = (state) => {
     pageBackgroundColor: state.settingState.colorScheme.pageBackgroundColor,
     rowItemBackgroundColor: state.settingState.colorScheme.rowItemBackgroundColor,
     segmentColor: state.settingState.colorScheme.segmentColor,
+    colorScheme: state.settingState.colorScheme.colorScheme
   };
 };
 
@@ -184,6 +172,9 @@ const styles = StyleSheet.create({
   },
   scrollContents: {
     //height: theme.screenHeight+theme.toolbar.height,
+  },
+  imgContainer:{
+    height: px2dp(400)
   },
   img: {
     width: theme.screenWidth,
@@ -234,4 +225,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default Home
+export default connect(mapStateToProps)(Home);
