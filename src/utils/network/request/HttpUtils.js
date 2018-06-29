@@ -6,10 +6,10 @@
 
 import { Component } from 'react'
 import responseType from '../../../constants/responseType'
-import { HF_API_URL,GH_API_URL } from '../../../constants/urlConfig'
+import { HF_API_URL, GH_API_URL } from '../../../constants/urlConfig'
 import { Toast } from '../../toast'
 import { ApiSource } from '../../../constants/commonType'
-import {RootHUD} from '../../progressHUD'
+import { RootHUD } from '../../progressHUD'
 /**
  * fetch 网络请求的header，可自定义header 内容
  * @type {{Accept: string, Content-Type: string, accessToken: *}}
@@ -26,7 +26,7 @@ let header = {
  * @returns {*}
  */
 const handleUrl = url => params => {
-  if (params) {
+  if (params && Object.keys(params).length !== 0) {
     let paramsArray = []
     Object.keys(params).forEach(key => paramsArray.push(key + '=' + encodeURIComponent(params[key])))
     if (url.search(/\?/) === -1) {
@@ -67,7 +67,7 @@ const timeoutFetch = (original_fetch, timeout = 30000) => {
 
   return abortable_promise
 }
-const fetchUrl = (url,source) => {
+const fetchUrl = (url, source) => {
   switch (source) {
     case ApiSource.HFSYSTEM:
       url = `${HF_API_URL}${url}`
@@ -88,11 +88,11 @@ export default class HttpUtils extends Component {
    * @param params 请求参数
    * @returns {Promise}
    */
-  static getRequest = (url, params = {},source='HFSYSTEM') => {
+  static getRequest = (url, params = {}, source = 'HFSYSTEM') => {
     console.log('=============');
     RootHUD.show();
-    console.log(handleUrl(fetchUrl(url,source))(params));
-    return timeoutFetch(fetch(handleUrl(fetchUrl(url,source))(params), {
+    console.log(handleUrl(fetchUrl(url, source))(params));
+    return timeoutFetch(fetch(handleUrl(fetchUrl(url, source))(params), {
       method: 'GET',
       headers: header
     }))
@@ -128,9 +128,9 @@ export default class HttpUtils extends Component {
    * @param params 请求参数
    * @returns {Promise}
    */
-  static postRequrst = (url, params = {},source=`HF_API_URL`) => {
+  static postRequrst = (url, params = {}, source = `HF_API_URL`) => {
     RootHUD.show();
-    return timeoutFetch(fetch(fetchUrl(url,source), {
+    return timeoutFetch(fetch(fetchUrl(url, source), {
       method: 'POST',
       headers: header,
       body: JSON.stringify(params)

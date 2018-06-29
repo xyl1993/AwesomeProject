@@ -74,7 +74,7 @@ class Home extends Component {
    */
   componentDidMount() {
     this._fetchData();
-    RCTDeviceEventEmitter.addListener('fetch', this._handleEventEmitter.bind(this));
+    // RCTDeviceEventEmitter.addListener('fetch', this._handleEventEmitter.bind(this));
   }
 
   /**
@@ -82,7 +82,7 @@ class Home extends Component {
    * 功能比较少，即：render一个组件前最后一次修改state的机会。
    */
   componentWillUnmount() {
-    RCTDeviceEventEmitter.removeListener('fetch', this._handleEventEmitter.bind(this));
+    // RCTDeviceEventEmitter.removeListener('fetch', this._handleEventEmitter.bind(this));
   }
 
   _handleEventEmitter(value) {
