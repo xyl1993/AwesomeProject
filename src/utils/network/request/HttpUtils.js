@@ -88,9 +88,11 @@ export default class HttpUtils extends Component {
    * @param params 请求参数
    * @returns {Promise}
    */
-  static getRequest = (url, params = {}, source = 'HFSYSTEM') => {
+  static getRequest = (url, params = {}, source = 'HFSYSTEM',showLoading=false) => {
     console.log('=============');
-    RootHUD.show();
+    if(showLoading){
+      RootHUD.show();
+    }
     console.log(handleUrl(fetchUrl(url, source))(params));
     return timeoutFetch(fetch(handleUrl(fetchUrl(url, source))(params), {
       method: 'GET',
@@ -117,7 +119,9 @@ export default class HttpUtils extends Component {
         }
       })
       .catch((error) => {
-        RootHUD.hidden();
+        if(showLoading){
+          RootHUD.hidden();
+        }
         Toast.show('服务器繁忙，请稍后再试')
       })
   }
@@ -128,8 +132,10 @@ export default class HttpUtils extends Component {
    * @param params 请求参数
    * @returns {Promise}
    */
-  static postRequrst = (url, params = {}, source = `HF_API_URL`) => {
-    RootHUD.show();
+  static postRequrst = (url, params = {}, source = `HF_API_URL`,showLoading=false) => {
+    if(showLoading){
+      RootHUD.show();
+    }
     return timeoutFetch(fetch(fetchUrl(url, source), {
       method: 'POST',
       headers: header,
@@ -156,7 +162,9 @@ export default class HttpUtils extends Component {
         }
       })
       .catch((error) => {
-        RootHUD.hidden();
+        if(showLoading){
+          RootHUD.hidden();
+        }
         Toast.show('服务器繁忙，请稍后再试')
       })
   }

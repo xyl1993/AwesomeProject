@@ -88,7 +88,7 @@ class Button extends Component {
 
 const styles = StyleSheet.create({
   cointer: {
-    height: theme.toolbar.height + px2dp(4),
+    height: theme.toolbar.height,
     width: theme.screenWidth,
     backgroundColor: 'rgba(0,0,0,0)'
   },

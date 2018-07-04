@@ -2,14 +2,16 @@
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { StyleSheet, View, Text, Platform, ScrollView, Animated, Image, RefreshControl, ListView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Platform, ScrollView, Animated, Image, RefreshControl, ListView, TouchableOpacity, TouchableNativeFeedback } from 'react-native';
 import RCTDeviceEventEmitter from 'RCTDeviceEventEmitter';
 import { connect } from 'react-redux';
 import { px2dp } from '../../../utils'
+import getCorrectImageSizeUrl from '../../../utils/imageFactory';
 import theme from '../../../constants/theme';
 import colors from '../../../constants/colors';
 import { getCurrentDate, getUpDate } from '../../../utils/utils';
 import NavigationBar from '../../../components/NavigationBar';
+import Footer from '../../../components/ListViewFooter';
 import Avatar from '../../../components/Avatar';
 import * as service from "./service";
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -23,9 +25,12 @@ class DiscoveryTab extends Component {
     this.tabIcon = [['logo-android', 'logo-apple', 'logo-chrome', 'ios-apps'], ['ios-film', 'ios-book', 'ios-radio', 'ios-images']];
     this.tabColor = [['rgb(141,192,89)', '#000', 'rgb(51,154,237)', 'rgb(249,89,58)'], ['#9370db', '#00ced1', '#ffa500', 'lightpink']];
     this.ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
+    this.refresh= false;
     this.state = {
       dataSource: [],
-      loading: true
+      isFullData: true,
+      loading: true,
+      
     }
   }
 
@@ -39,6 +44,19 @@ class DiscoveryTab extends Component {
           dataSource={this.ds.cloneWithRows(this.state.dataSource)}
           renderHeader={this._renderHeader.bind(this)}
           renderRow={this._renderRow.bind(this)}
+          renderFooter={this._renderFooter.bind(this)}
+          initialListSize={10}
+          pageSize={10}
+          // onEndReached={this._onEndReached.bind(this)}
+          onEndReachedThreshold={5}
+          refreshControl={
+            <RefreshControl
+              refreshing={this.state.loading}
+              onRefresh={this._onRefresh.bind(this)}
+              tintColor={this.props.mainThemeColor}
+              colors={[this.props.mainThemeColor]}
+              title="玩命加载中..."
+            />}
         >
 
         </ListView>
@@ -62,17 +80,20 @@ class DiscoveryTab extends Component {
 
   _fetchData() {
     this.setState({ loading: true });
-    let dataList = this.state.dataSource;
-    const randomCategory = ['Android/2', 'iOS/2', '前端/2', '休息视频/2', '拓展资源/2', 'App/2', '瞎推荐/2'];
+    let dataList = this.refresh ? [] : this.state.dataSource;
+    const randomCategory = ['Android/5', 'iOS/5', '前端/5', '休息视频/5', '拓展资源/5', 'App/5', '瞎推荐/5'];
     service.fetchRandomData(randomCategory[Math.floor(Math.random() * 7)], {}).then(res => {
       let { error, results } = res;
-      for(let item of results){
+      for (let item of results) {
         dataList.push(item);
       }
       this.setState({ dataSource: dataList, loading: false });
     });
   };
-
+  _onRefresh() {
+    this.refresh = true;
+    this._fetchData();
+  };
   _renderHeader() {
     const { rowItemBackgroundColor, segmentColor, subTitleColor } = this.props;
     return (
@@ -113,19 +134,72 @@ class DiscoveryTab extends Component {
   _renderRow(rowData, sectionID, rowID, highlightRow) {
     if (Platform.OS === 'android') {
       return (
-        <Text>{rowData.id}</Text>
+        <TouchableNativeFeedback
+          overflow="hidden"
+          key={rowID}
+          onPress={this._itemOnPress.bind(this, rowData)}>
+          {this._renderRowContent(rowData)}
+        </TouchableNativeFeedback>
       );
     } else if (Platform.OS === 'ios') {
       return (
-        <Text>{rowData.id}</Text>
+        <TouchableHighlight
+          overflow="hidden"
+          key={rowID}
+          onPress={this._itemOnPress.bind(this, rowData)}
+          underlayColor={theme.touchableHighlightUnderlayColor}>
+          {this._renderRowContent(rowData)}
+        </TouchableHighlight>
       );
     }
+  }
+  _renderRowContent(rowData) {
+    const { titleColor, subTitleColor, rowItemBackgroundColor, thumbnailColor, segmentColor } = this.props;
+    return (
+      <View style={[styles.itemContainer, { backgroundColor: rowItemBackgroundColor, borderBottomColor: segmentColor }]}>
+        <View style={[styles.txtPart]}>
+          <View style={styles.titlePart}>
+            <Text style={[styles.title, { color: titleColor }]} numberOfLines={2}>{rowData.desc}</Text>
+          </View>
+          <View style={styles.infoPart}>
+            <Icon name="ios-pricetag-outline" color={subTitleColor} />
+            <Text style={[styles.detailsLabel, { color: subTitleColor }]}>{rowData.type}</Text>
+            <Icon name="ios-create-outline" color={subTitleColor} />
+            <Text style={[styles.detailsLabel, { color: subTitleColor }]}>{rowData.who ? rowData.who : 'null'}</Text>
+            <Icon name="ios-time-outline" color={subTitleColor} />
+            <Text style={[styles.detailsLabel, { color: subTitleColor }]}>{this._handleCreateTime(rowData.publishedAt)}</Text>
+          </View>
+        </View>
+        <View style={[styles.imgPart]}>
+          {(rowData.images && this.props.isOpenThumbnail) ?
+            <Image style={styles.image} source={{ uri: getCorrectImageSizeUrl(rowData.images[0]) }} />
+            :
+            <Image style={[styles.image, { backgroundColor: thumbnailColor }]} source={require('../../../assets/images/user_article_no_data.png')} />
+          }
+        </View>
+      </View>
+    )
   }
   _renderBtnContent(i, index) {
     return (
       <View style={{ width: px2dp(50), height: px2dp(50), alignItems: 'center', justifyContent: 'center' }}>
         <Avatar icon={this.tabIcon[i][index]} width={px2dp(50)} backgroundColor={this.tabColor[i][index]} />
       </View>
+    );
+  }
+  _itemOnPress(rowData) {
+    // this.props.navigator.push({
+    //   component: WebViewPage,
+    //   args: { rowData: rowData }
+    // });
+  }
+  _handleCreateTime(time) {
+    return time.substring(0, 10);
+  }
+  _renderFooter() {
+    const { tabIconColor } = this.props;
+    return (
+      <Footer indicatorColor={tabIconColor} isFullData={true} isRenderFooter={this.state.isFullData} />
     );
   }
 };
@@ -135,10 +209,10 @@ class DiscoveryTab extends Component {
 const mapStateToProps = (state) => {
   return {
     isOpenThumbnail: state.settingState.isOpenThumbnail,
-    mainThemeColor: state.settingState.colorScheme.mainThemeColor,
-    pageBackgroundColor: state.settingState.colorScheme.pageBackgroundColor,
-    segmentColor: state.settingState.colorScheme.segmentColor,
-    titleColor: state.settingState.colorScheme.titleColor,
+    mainThemeColor: state.settingState.colorScheme.mainThemeColor,   //主题颜色
+    pageBackgroundColor: state.settingState.colorScheme.pageBackgroundColor, //页面背景色
+    segmentColor: state.settingState.colorScheme.segmentColor, //边框颜色
+    titleColor: state.settingState.colorScheme.titleColor,   //标题颜色
     subTitleColor: state.settingState.colorScheme.subTitleColor,
     rowItemBackgroundColor: state.settingState.colorScheme.rowItemBackgroundColor,
     thumbnailColor: state.settingState.colorScheme.thumbnailColor,
@@ -179,7 +253,44 @@ const styles = StyleSheet.create({
     borderBottomWidth: theme.segment.width,
     borderTopWidth: theme.segment.width,
     alignItems: 'center'
-  }
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    width: theme.screenWidth,
+    height: px2dp(73),
+    borderBottomWidth: px2dp(1)
+  },
+  txtPart: {
+    flex: 80,
+    paddingTop: px2dp(10),
+    paddingLeft: px2dp(12),
+    paddingRight: px2dp(5),
+    paddingBottom: px2dp(10)
+  },
+  imgPart: {
+    flex: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: px2dp(5)
+  },
+  image: {
+    width: px2dp(60),
+    height: px2dp(60),
+    resizeMode: 'cover'
+  },
+  titlePart: {
+    flex: 70,
+  },
+  infoPart: {
+    flex: 30,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  detailsLabel: {
+    marginLeft: px2dp(3),
+    marginRight: px2dp(13),
+    fontSize: px2dp(10)
+  },
 });
 
 export default connect(mapStateToProps)(DiscoveryTab);
